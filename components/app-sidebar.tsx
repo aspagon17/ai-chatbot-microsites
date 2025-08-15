@@ -2,6 +2,7 @@
 
 import type { User } from 'next-auth';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
@@ -18,9 +19,29 @@ import {
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
+const NEW_CHAT_KEYBOARD_SHORTCUT = 'j';
+
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
+
+  // Global keyboard shortcut: Cmd/Ctrl + J to start a new chat
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === NEW_CHAT_KEYBOARD_SHORTCUT
+      ) {
+        event.preventDefault();
+        setOpenMobile(false);
+        router.push('/');
+        router.refresh();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router, setOpenMobile]);
 
   return (
     <Sidebar className="group-data-[side=left]:border-r-0">
@@ -53,7 +74,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   <PlusIcon />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent align="end">New Chat</TooltipContent>
+              <TooltipContent align="end">New Chat (⌘J)</TooltipContent>
             </Tooltip>
           </div>
         </SidebarMenu>

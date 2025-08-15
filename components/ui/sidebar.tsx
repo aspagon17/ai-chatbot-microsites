@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
+// biome-ignore lint/style/useImportType: <explanation>
 import { VariantProps, cva } from 'class-variance-authority';
 import { PanelLeft } from 'lucide-react';
 
@@ -18,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -203,6 +205,10 @@ const Sidebar = React.forwardRef<
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+          <DialogTitle className="sr-only">Chatbot Sidebar Menu</DialogTitle>
+          {/* <DialogDescription className="sr-only">
+            Chatbot
+          </DialogDescription> */}
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
