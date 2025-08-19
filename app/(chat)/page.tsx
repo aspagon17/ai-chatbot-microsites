@@ -5,6 +5,7 @@ import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { generateUUID } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { auth } from '../(auth)/auth';
+import { getUserById } from '@/lib/db/queries';
 import { redirect } from 'next/navigation';
 
 export default async function Page() {
@@ -12,6 +13,12 @@ export default async function Page() {
 
   if (!session) {
     redirect('/api/auth/guest');
+  }
+
+  // If session exists but user was deleted (e.g., DB reset), force new guest session
+  const [existingUser] = await getUserById(session.user.id);
+  if (!existingUser) {
+    redirect('/api/auth/guest?redirectUrl=/');
   }
 
   const id = generateUUID();

@@ -14,6 +14,7 @@ import {
   getChatById,
   getMessageCountByUserId,
   getMessagesByChatId,
+  getUserById,
   saveChat,
   saveMessages,
 } from '@/lib/db/queries';
@@ -46,6 +47,7 @@ export function getStreamContext() {
   if (!globalStreamContext) {
     try {
       globalStreamContext = createResumableStreamContext({
+        // default is to use REDIS_URL from env to store stream state
         waitUntil: after,
       });
     } catch (error: any) {
@@ -91,6 +93,13 @@ export async function POST(request: Request) {
       return new ChatSDKError('unauthorized:chat').toResponse();
     }
 
+    // Validate that the session's user still exists in the database.
+    // This avoids FK violations when saving a new chat with a stale session.
+    const [existingUser] = await getUserById(session.user.id);
+    if (!existingUser) {
+      return new ChatSDKError('unauthorized:chat').toResponse();
+    }
+
     const userType: UserType = session.user.type;
 
     const messageCount = await getMessageCountByUserId({
@@ -117,6 +126,8 @@ export async function POST(request: Request) {
       });
     } else {
       if (chat.userId !== session.user.id) {
+        console.log('Session user id: ', session.user.id);
+        console.log('Chat user id: ', chat.userId);
         return new ChatSDKError('forbidden:chat').toResponse();
       }
     }
@@ -156,7 +167,7 @@ export async function POST(request: Request) {
           system: systemPrompt({ selectedChatModel, requestHints }),
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
-          experimental_activeTools:
+          activeTools:
             selectedChatModel === 'chat-model-reasoning'
               ? []
               : [

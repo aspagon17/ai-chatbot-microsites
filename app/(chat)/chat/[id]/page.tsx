@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
-import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
+import { getChatById, getMessagesByChatId, getUserById } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { convertToUIMessages } from '@/lib/utils';
@@ -21,6 +21,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   if (!session) {
     redirect('/api/auth/guest');
+  }
+
+  // If session exists but user was deleted (e.g., DB reset), force new guest session
+  const [existingUser] = await getUserById(session.user.id);
+  if (!existingUser) {
+    redirect(`/api/auth/guest?redirectUrl=/chat/${id}`);
   }
 
   if (chat.visibility === 'private') {

@@ -1,4 +1,5 @@
 import { signIn } from '@/app/(auth)/auth';
+import { getUserById } from '@/lib/db/queries';
 import { getToken } from 'next-auth/jwt';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +18,17 @@ export async function GET(request: Request) {
   });
 
   if (token) {
-    return NextResponse.redirect(new URL('/', request.url));
+    // If a token exists but the DB user was wiped (e.g., dev reset),
+    // re-create a fresh guest session instead of redirecting with a bad token.
+    try {
+      const [existing] = await getUserById(token.id);
+      if (existing) {
+        return NextResponse.redirect(new URL(redirectUrl, request.url));
+      }
+    } catch (_) {
+      // fall through to signIn
+    }
+    return signIn('guest', { redirect: true, redirectTo: redirectUrl });
   }
 
   return signIn('guest', { redirect: true, redirectTo: redirectUrl });
